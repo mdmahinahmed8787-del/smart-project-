@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeoHome X8</title>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI;
+background:#0a0a0a;
+color:#fff;
+padding:15px;
+}
+
+.card{
+background:#161616;
+border-radius:15px;
+padding:15px;
+margin-bottom:15px;
+border:1px solid #2a2a2a;
+}
+
+h2{
+color:#00ff88;
+margin:0 0 10px 0;
+}
+
+/* IP SECTION */
+input{
+width:70%;
+padding:10px;
+border-radius:10px;
+border:2px solid #00ff88;
+background:#000;
+color:#00ff88;
+}
+
+button{
+padding:10px;
+border:none;
+border-radius:10px;
+background:#00ff88;
+font-weight:bold;
+}
+
+/* STATUS */
+.status{
+font-size:18px;
+padding:10px;
+border-radius:10px;
+margin-top:10px;
+}
+
+.connected{background:#003b1a;}
+.disconnected{background:#3b0000;}
+
+/* RELAY */
+.grid{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:10px;
+}
+
+.relay{
+background:#222;
+padding:15px;
+text-align:center;
+border-radius:10px;
+cursor:pointer;
+}
+
+.on{background:#00ff88;color:#000;}
+
+/* ALARM */
+input.small{
+width:60px;
+text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h2>ESP32 Connect</h2>
+<input id="ip" placeholder="192.168.1.10">
+<button onclick="connect()">CONNECT</button>
+
+<div id="status" class="status disconnected">
+Status: DISCONNECTED
+</div>
+</div>
+
+<!-- RELAY -->
+<div class="card">
+<h2>Relay Control</h2>
+
+<div class="grid">
+
+<div class="relay" onclick="relay(1,this)">R1</div>
+<div class="relay" onclick="relay(2,this)">R2</div>
+<div class="relay" onclick="relay(3,this)">R3</div>
+<div class="relay" onclick="relay(4,this)">R4</div>
+<div class="relay" onclick="relay(5,this)">R5</div>
+<div class="relay" onclick="relay(6,this)">R6</div>
+<div class="relay" onclick="relay(7,this)">R7</div>
+<div class="relay" onclick="relay(8,this)">R8</div>
+
+</div>
+</div>
+
+<!-- ALARM -->
+<div class="card">
+<h2>Alarm</h2>
+
+<input id="h" class="small" type="number" min="1" max="12" value="6"> :
+<input id="m" class="small" type="number" min="0" max="59" value="30">
+
+<select id="ampm">
+<option>AM</option>
+<option>PM</option>
+</select>
+
+<button onclick="setAlarm()">SET</button>
+</div>
+
+<script>
+
+let baseURL = "";
+let isConnected = false;
+
+/* CONNECT */
+async function connect(){
+let ip = document.getElementById("ip").value;
+baseURL = "http://" + ip;
+
+try{
+let res = await fetch(baseURL + "/ping");
+let data = await res.text();
+
+if(data.trim() === "OK"){
+isConnected = true;
+setStatus(true);
+}
+else{
+setStatus(false);
+}
+}
+catch(e){
+setStatus(false);
+}
+}
+
+/* STATUS */
+function setStatus(state){
+let box = document.getElementById("status");
+
+if(state){
+box.className = "status connected";
+box.innerHTML = "Status: CONNECTED 🟢";
+}
+else{
+box.className = "status disconnected";
+box.innerHTML = "Status: DISCONNECTED 🔴";
+}
+}
+
+/* RELAY */
+async function relay(n, el){
+
+if(!isConnected){
+alert("NOT CONNECTED");
+return;
+}
+
+el.classList.toggle("on");
+
+try{
+await fetch(baseURL + "/r" + n);
+}
+catch(e){
+alert("ESP ERROR");
+}
+}
+
+/* ALARM */
+function setAlarm(){
+
+if(!isConnected){
+alert("CONNECT FIRST");
+return;
+}
+
+let h = document.getElementById("h").value;
+let m = document.getElementById("m").value;
+let ap = document.getElementById("ampm").value;
+
+if(h<1 || h>12 || m<0 || m>59){
+alert("INVALID TIME");
+return;
+}
+
+fetch(baseURL + "/alarm?h="+h+"&m="+m+"&p="+ap);
+}
+
+</script>
+
+</body>
+</html>
